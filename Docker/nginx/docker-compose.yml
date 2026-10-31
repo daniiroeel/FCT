@@ -11,7 +11,7 @@ services:
       - ./data:/data
       - ./letsencrypt:/etc/letsencrypt
     networks:
-      - proxy_red
+      - npm
 
 networks:
   npm:
