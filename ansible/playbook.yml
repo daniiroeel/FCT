@@ -1,0 +1,95 @@
+---
+- name: "Creación de usuarios"
+  hosts: all
+  gather_facts: no
+
+  # ----------------------------------------------------------------
+  # Usuario Administrador para crear os usuarios.
+  # ----------------------------------------------------------------
+  vars:
+    ansible_ad_username: "{{ ansible_user }}"
+    ansible_ad_password: "{{ ansible_password }}"
+
+  tasks:
+    # ----------------------------------------------------------------
+    # 1. CREAR OU DE USUARIOS
+    # ----------------------------------------------------------------
+    - name: 1. Crear a unidade Organizativa de usuarios
+      microsoft.ad.ou:
+        name: "{{ OU }}"
+        path: "{{ dominio_base }}"
+        state: present
+        protect_from_deletion: no
+
+    # ----------------------------------------------------------------
+    # 2. CREACIÓN DOS USUARIOS NO AD
+    # ----------------------------------------------------------------
+    - name: "2. Crear usuarios en AD y configurar la unidad de red U:"
+      microsoft.ad.user:
+        name: "{{ item.nombre }} {{ item.apellido1 }} {{ item.apellido2 }}"
+        sam_account_name: "{{ item.sam_name }}"
+        upn: "{{ item.sam_name }}@{{ dominio_base | regex_replace('(?i)DC=', '') | regex_replace(',', '.') }}"
+        firstname: "{{ item.nombre }}"
+        lastname: "{{ item.apellido1 }} {{ item.apellido2 }}"
+        path: "OU={{ OU }},{{ dominio_base }}"
+        state: present
+        password: "{{ password_usuarios }}"
+        update_password: on_create
+        password_expired: yes
+        enabled: yes
+
+        attributes:
+          set:
+            homeDrive: "U:"
+            homeDirectory: "\\\\{{ nombre_servidor }}\\{{ item.sam_name }}"
+      loop: "{{ lista_usuarios }}"
+
+    # ----------------------------------------------------------------
+    # 3. CREACIÓN, COMPARTICIÓN E ILLAMENTO DE CARPETAS
+    # ----------------------------------------------------------------
+    - name: 3.1. Esperar que as contas do AD se sincronicen
+      ansible.builtin.pause:
+        seconds: 10
+
+    - name: 3.2. Crear a carpeta raíz 
+      ansible.windows.win_file:
+        path: "{{ ruta_base_carpetas }}"
+        state: directory
+
+    - name: 3.3. Crear carpeta para cada usuario
+      ansible.windows.win_file:
+        path: "{{ ruta_base_carpetas }}\\{{ item.sam_name }}"
+        state: directory
+      loop: "{{ lista_usuarios }}"
+
+    - name: "3.4. Compartir a carpeta de cada usuario"
+      ansible.windows.win_share:
+        name: "{{ item.sam_name }}"
+        path: "{{ ruta_base_carpetas }}\\{{ item.sam_name }}"
+        full: "Todos"
+        state: present
+      loop: "{{ lista_usuarios }}"
+
+    - name: "3.5. Romper herencia e eliminar permisos antigos na subcarpeta"
+      ansible.windows.win_shell: |
+        icacls "{{ ruta_base_carpetas }}\\{{ item.sam_name }}" /inheritance:r
+      loop: "{{ lista_usuarios }}"
+      changed_when: true
+
+    - name: 3.6. Devolver control total aos Administradores da máquina
+      ansible.windows.win_acl:
+        path: "{{ ruta_base_carpetas }}\\{{ item.sam_name }}"
+        user: "BUILTIN\\Administradores"
+        rights: FullControl
+        type: allow
+        state: present
+      loop: "{{ lista_usuarios }}"
+
+    - name: 3.7. Permiso RW ao dono da carpeta
+      ansible.windows.win_acl:
+        path: "{{ ruta_base_carpetas }}\\{{ item.sam_name }}"
+        user: "{{ dominio_base | regex_search('(?i)DC=([^,]+)', '\\1') | first | upper }}\\{{ item.sam_name }}"
+        rights: Modify
+        type: allow
+        state: present
+      loop: "{{ lista_usuarios }}"
