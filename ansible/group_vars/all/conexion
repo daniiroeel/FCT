@@ -1,0 +1,6 @@
+---
+# =================================================================
+# 1. CREDENCIALES DE CONEXIÓN (Administrador do dominio)
+# =================================================================
+ansible_user: "Usuario Administrador"
+ansible_password: "Contraseña Administrador"
