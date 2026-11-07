@@ -13,7 +13,7 @@ ansible/: contiene los archivos relacionados con la automatización mediante Ans
 
 La estructura general del repositorio es la siguiente:
 
-
+```
 ├── docker/
 │   ├── contenedor1/
 │   │   ├── docker-compose.yml
@@ -33,6 +33,7 @@ La estructura general del repositorio es la siguiente:
         └── all
             └── conexion.yml
             └── usuarios.yml
+```
 
 2.1. Directorio docker/
 
