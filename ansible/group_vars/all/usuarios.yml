@@ -1,0 +1,24 @@
+---
+# ===============================================
+# VARIABLES PARA CREAR OS USUARIOS                                
+# ===============================================
+ruta_base_carpetas: "C:\\ruta_carpetas_U"
+password_usuarios: "PrimerPassUsuarios" 
+OU: "OU_Usuarios"
+dominio_base: "DC=dominio,DC=local"
+nombre_servidor: "Nombre_Servidor"
+
+lista_usuarios:
+  - nombre: "usuario"
+    apellido1: "numero"
+    apellido2: "uno"
+    sam_name: "inicio.sesion"
+
+  - nombre: "Usuario"
+    apellido1: "Numero"
+    apellido2: "Dos"
+    sam_name: "usuario.dos"
+
+#Tantos usuarios como se quieran crear...
+
+    
